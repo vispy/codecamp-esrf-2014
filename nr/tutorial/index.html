@@ -1,0 +1,1158 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.11: http://docutils.sourceforge.net/" />
+<title>Modern OpenGL tutorial (python)</title>
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+<body>
+<div class="document" id="modern-opengl-tutorial-python">
+<h1 class="title">Modern OpenGL tutorial (python)</h1>
+<h2 class="subtitle" id="nicolas-p-rougier-ersf-code-camp-2014">Nicolas P. Rougier - ERSF Code camp 2014</h2>
+
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#introduction" id="id8">Introduction</a><ul>
+<li><a class="reference internal" href="#what-are-shaders" id="id9">What are shaders ?</a></li>
+<li><a class="reference internal" href="#what-are-buffers" id="id10">What are buffers ?</a></li>
+<li><a class="reference internal" href="#what-are-uniforms-attributes-and-varyings" id="id11">What are uniforms, attributes and varyings ?</a></li>
+<li><a class="reference internal" href="#summary" id="id12">Summary</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#hello-flat-world" id="id13">Hello (flat) world!</a><ul>
+<li><a class="reference internal" href="#the-hard-way-opengl" id="id14">The hard way (OpenGL)</a></li>
+<li><a class="reference internal" href="#the-easy-way-gloo" id="id15">The easy way (gloo)</a></li>
+<li><a class="reference internal" href="#a-step-further" id="id16">A step further</a></li>
+<li><a class="reference internal" href="#exercices" id="id17">Exercices</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#hello-cubic-world" id="id18">Hello (cubic) world!</a><ul>
+<li><a class="reference internal" href="#projection-matrix" id="id19">Projection matrix</a></li>
+<li><a class="reference internal" href="#model-and-view-matrices" id="id20">Model and view matrices</a></li>
+<li><a class="reference internal" href="#building-cube" id="id21">Building cube</a></li>
+<li><a class="reference internal" href="#building-matrices" id="id22">Building matrices</a></li>
+<li><a class="reference internal" href="#id1" id="id23">Rendering</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id2" id="id24">A step further</a><ul>
+<li><a class="reference internal" href="#colored-cube" id="id25">Colored cube</a></li>
+<li><a class="reference internal" href="#outlined-cube" id="id26">Outlined cube</a></li>
+<li><a class="reference internal" href="#textured-cube" id="id27">Textured cube</a></li>
+<li><a class="reference internal" href="#lighted-cube" id="id28">Lighted cube</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#gloo-api" id="id29">Gloo API</a><ul>
+<li><a class="reference internal" href="#vertex-buffer" id="id30">Vertex Buffer</a></li>
+<li><a class="reference internal" href="#index-buffer" id="id31">Index Buffer</a></li>
+<li><a class="reference internal" href="#program" id="id32">Program</a></li>
+<li><a class="reference internal" href="#texture" id="id33">Texture</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#beyond-this-tutorial" id="id34">Beyond this tutorial</a><ul>
+<li><a class="reference internal" href="#tutorials-books" id="id35">Tutorials / Books</a></li>
+<li><a class="reference internal" href="#vispy-documentation" id="id36">Vispy documentation</a></li>
+<li><a class="reference internal" href="#mailing-lists" id="id37">Mailing lists</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>This tutorial is part of the <a class="reference external" href="http://vispy.org">vispy project</a> which is an
+OpenGL-based interactive visualization library in Python. During this tutorial,
+only the vispy low-level interface (named <strong>gloo</strong>) will be used.</p>
+<p>All code and material is licensed under a <a class="reference external" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution (CC by
+4.0)</a></p>
+<p><strong>Requirements</strong>:</p>
+<blockquote>
+<ul class="simple">
+<li><tt class="docutils literal">•</tt> Python 2.7 or higher</li>
+<li><tt class="docutils literal">•</tt> PyOpenGL 3.0 or higher</li>
+<li><tt class="docutils literal">•</tt> Numpy 1.5 or higher</li>
+<li><tt class="docutils literal">•</tt> Vispy 0.3 or higher</li>
+</ul>
+</blockquote>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>A stand-alone <strong>gloo</strong> package is distributed along this tutorial but you
+should use the vispy.gloo package from the latest vispy distribution which is
+more up-to-date.</p>
+<div class="section" id="introduction">
+<h1><a class="toc-backref" href="#id8">Introduction</a></h1>
+<p>Before diving into the core tutorial, it is important to understand that OpenGL
+has evolved over the years and a big change occured in 2003 with the
+introduction of the dynamic pipeline (OpenGL 2.0), i.e. the use of shaders that
+allow to have direct access to the GPU.</p>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">ES is a light version of OpenGL for embedded systems such as tablets or
+mobiles. There also exists WebGL which is very similar to ES but is not shown on
+this graphic.</p>
+</div>
+<img alt="images/gl-history.png" src="images/gl-history.png" style="width: 75%;" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Before this version, OpenGL was using a fixed pipeline and you may still find a
+lot of tutorials that still use this fixed pipeline. How to know if a tutorial
+address the fixed pipeline ? It's relatively easy.  If you see GL commands such
+as:</p>
+<pre class="literal-block">
+glVertex, glColor, glLight, glMaterial
+glBegin, glEnd
+glMatrix, glMatrixMode, glLoadIdentity
+glPushMatrix, glPopMatrix
+glRect, glPolygonMode
+glBitmap, glAphaFunc
+glNewList, glDisplayList
+glPushAttrib, glPopAttrib
+glVertexPointer, glColorPointer, glTexCoordPointer, glNormalPointer
+</pre>
+<p>then it's most certainly a tutorial that adress the fixed pipeline.
+While modern OpenGL is far more powerful than the fixed pipeline version, the
+learning curve may be a bit steeper. This tutorial will try to help you start
+using it.</p>
+<div class="section" id="what-are-shaders">
+<h2><a class="toc-backref" href="#id9">What are shaders ?</a></h2>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">The shader language is called glsl.  There are many versions that goes from 1.0
+to 1.5 and subsequents version get the number of OpenGL version. Last version
+is 4.4 (February 2014).</p>
+</div>
+<p>Shaders are pieces of program (using a C-like language) that are build onto the
+GPU and executed during the rendering pipeline. Depending on the nature of the
+shaders (there are many types depending on the version of OpenGL you're using),
+they will act at different stage of the rendering pipeline. To simplify this
+tutorial, we'll use only <strong>vertex</strong> and <strong>fragment</strong> shader as shown below:</p>
+<img alt="images/gl-pipeline.png" src="images/gl-pipeline.png" style="width: 75%;" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>A vertex shader acts on vertices and is supposed to output the vertex
+<strong>position</strong> (→ <tt class="docutils literal">gl_Position</tt>) on the viewport (i.e. screen). A fragment shader
+acts at the fragment level and is supposed to output the <strong>color</strong>
+(→ <tt class="docutils literal">gl_FragColor</tt>) of the fragment. Hence, a minimal vertex shader is:</p>
+<pre class="literal-block">
+void main()
+{
+    gl_Position = vec4(0.0,0.0,0.0,1.0);
+}
+</pre>
+<p>while a minimal fragment shader would be:</p>
+<pre class="literal-block">
+void main()
+{
+    gl_FragColor = vec4(0.0,0.0,0.0,1.0);
+}
+</pre>
+<p>These two shaders are not very useful since the first will transform any
+vertex into the null vertex while the second will output the black color for
+any fragment. We'll see later how to make them to do more useful things.</p>
+<p>One question remains: when are those shaders exectuted exactly ? The vertex
+shader is executed for each vertex that is given to the rendering pipeline
+(we'll see what does that mean exactly later) and the fragment shader is
+executed on each fragment that is generated after the vertex stage. For
+example, in the simple figure above, the vertex would be called 3 times, once
+for each vertex (1,2 and 3) while the fragment shader would be executed 21
+times, once for each fragment (pixel).</p>
+</div>
+<div class="section" id="what-are-buffers">
+<h2><a class="toc-backref" href="#id10">What are buffers ?</a></h2>
+<p>We explained earlier that the vertex shader act on the vertices. The question
+is thus where do those vertices comes from ? The idea of modern GL is that
+vertices are stored on the GPU and needs to be uploaded (only once) to the GPU
+before rendering. The way to do that is to build buffers onto the CPU and to
+send them onto the GPU. If your data does not change, no need to upload it
+again. That is the big difference with the previous fixed pipeline where data
+were uploaded at each rendering call (only display lists were built into GPU
+memory).</p>
+<p>But what is the structure of a vertex ? OpenGL does not assume anything about
+your vertex structure and you're free to use as many information you may need
+for each vertex. The only condition is that all vertices from a buffer have the
+same structure (possibly with different content). This again is a big
+difference with the fixed pipeline where OpenGL was doing a lot of complex
+rendering stuff for you (projections, lighting, normals, etc.) with an implicit
+fixed vertex structure. Now you're on your own...</p>
+<div class="line-block">
+<div class="line"><strong>Good news</strong> is that you're now free to do virtually anything you want.</div>
+<div class="line"><strong>Bad news</strong> is that you have to program everything, even the most basic things like projection and lighting.</div>
+</div>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Let's take a simple example of a vertex structure where we want each vertex to
+hold a position and a color. The easiest way to do that in python is to use a
+structured array using the <a class="reference external" href="http://www.numpy.org">numpy</a> library:</p>
+<pre class="literal-block">
+data = numpy.zeros(4, dtype = [ (&quot;position&quot;, np.float32, 3),
+                                (&quot;color&quot;,    np.float32, 4)] )
+</pre>
+<p>We just created a CPU buffer with 4 vertices, each of them having a
+<tt class="docutils literal">position</tt> (3 floats for x,y,z coordinates) and a <tt class="docutils literal">color</tt> (4 floats for
+red, blue, green and alpha channels). Note that we explicitely chose to have 3
+coordinates for <tt class="docutils literal">position</tt> but we may have chosen to have only 2 if were to
+work in two-dimensions only. Same holds true for <tt class="docutils literal">color</tt>. We could have used
+only 3 channels (r,g,b) if we did not want to use transparency. This would save
+some bytes for each vertex. Of course, for 4 vertices, this does not really
+matter but you have to realize it <strong>will matter</strong> if you data size grows up to
+one or ten million vertices.</p>
+</div>
+<div class="section" id="what-are-uniforms-attributes-and-varyings">
+<h2><a class="toc-backref" href="#id11">What are uniforms, attributes and varyings ?</a></h2>
+<p>At this point in the tutorial, we know what are shaders and buffers but we
+still need to explain how they may be connected together. So, let's consider
+again our CPU buffer:</p>
+<pre class="literal-block">
+data = numpy.zeros(4, dtype = [ (&quot;position&quot;, np.float32, 2),
+                                (&quot;color&quot;,    np.float32, 4)] )
+</pre>
+<p>We need to tell the vertex shader that it will have to handle vertices where a
+position is a tuple of 3 floats and color is a tuple of 4 floats. This is
+precisely what attributes are meant for. Let us change slightly our previous
+vertex shader:</p>
+<pre class="literal-block">
+attribute vec2 position;
+attribute vec4 color;
+void main()
+{
+    gl_Position = vec4(position, 0.0, 1.0);
+}
+</pre>
+<p>This vertex shader now expects a vertex to possess 2 attributes, one named
+<tt class="docutils literal">position</tt> and one named <tt class="docutils literal">color</tt> with specified types (vec3 means tuple of
+3 floats and vec4 means tuple of 4 floats). It is important to note that even
+if we labeled the first attribute <tt class="docutils literal">position</tt>, this attribute is not yet bound
+to the actual <tt class="docutils literal">position</tt> in the numpy array. We'll need to do it explicitly
+at some point in our program and there is no automagic that will bind the numpy
+array field to the right attribute, you'll have to do it yourself, but we'll
+see that later.</p>
+<p>The second type of information we can feed the vertex shader are the uniforms
+that may be considered as constant values (across all the vertices). Let's say
+for example we want to scale all the vertices by a constant factor <tt class="docutils literal">scale</tt>,
+we would thus write:</p>
+<pre class="literal-block">
+uniform float scale;
+attribute vec2 position;
+attribute vec4 color;
+void main()
+{
+    gl_Position = vec4(position*scale, 0.0, 1.0);
+}
+</pre>
+<p>Last type is the varying type that is used to pass information between the
+vertex stage and the fragment stage. So let us suppose (again) we want to pass
+the vertex color to the fragment shader, we now write:</p>
+<pre class="literal-block">
+uniform float scale;
+attribute vec2 position;
+attribute vec4 color;
+varying vec4 v_color;
+
+void main()
+{
+    gl_Position = vec4(position*scale, 0.0, 1.0);
+    v_color = color;
+}
+</pre>
+<p>and then in the fragment shader, we write:</p>
+<pre class="literal-block">
+varying vec4 v_color;
+
+void main()
+{
+    gl_FragColor = v_color;
+}
+</pre>
+<p>The question is what is the value of <tt class="docutils literal">v_color</tt> inside the fragment shader ?
+If you look at the figure that introduced the gl pipleline, we have 3 vertices and 21
+fragments. What is the color of each individual fragment ?</p>
+<p>The answer is <em>the interpolation of all 3 vertices color</em>. This interpolation
+is made using distance of the fragment to each individual vertex. This is a
+very important concept to understand. Any varying value is interpolated between
+the vertices that compose the elementary item (mostly, line or triangle).</p>
+</div>
+<div class="section" id="summary">
+<h2><a class="toc-backref" href="#id12">Summary</a></h2>
+<p>We're done with this part. We know we need a structured numpy array to hold our
+vertices, a vertex shader to instruct the GPU what to do with the vertices and
+a fragment shader to compute the final color. Now comes the hard part where
+we'll put all this together...</p>
+<p>Still time to flee...</p>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<p>Too late...</p>
+</div>
+</div>
+<div class="section" id="hello-flat-world">
+<h1><a class="toc-backref" href="#id13">Hello (flat) world!</a></h1>
+<p>Before using OpenGL, we need to open a window with a valid GL context. This can
+be done using toolkit such as Gtk, Qt or Wx or any native toolkit (Windows,
+Linux, OSX). Note there also exists dedicated toolkits such as GLFW or GLUT and
+the advantage of GLUT is that it's already installed alongside OpenGL. Even if
+it is now deprecated, we'll use GLUT since it's a very lightweight toolkit and
+does not require any extra package. Here is a minimal setup that should open a
+window with garbage on it (since we do not even clear the window):</p>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">GLUT is now deprecated and you might prefer to use <a class="reference external" href="http://www.glfw.org">GLFW</a>
+which is actively maintained.</p>
+</div>
+<pre class="literal-block">
+import OpenGL.GL as gl
+import OpenGL.GLUT as glut
+
+def display():
+    glut.glutSwapBuffers()
+
+def reshape(width,height):
+    gl.glViewport(0, 0, width, height)
+
+def keyboard( key, x, y ):
+    if key == '\033':
+        sys.exit( )
+
+glut.glutInit()
+glut.glutInitDisplayMode(glut.GLUT_DOUBLE | glut.GLUT_RGBA)
+glut.glutCreateWindow('Hello world!')
+glut.glutReshapeWindow(512,512)
+glut.glutReshapeFunc(reshape)
+glut.glutDisplayFunc(display)
+glut.glutKeyboardFunc(keyboard)
+glut.glutMainLoop()
+</pre>
+<p>The <tt class="docutils literal">glutInitDisplayMode</tt> tells OpenGL what are the context properties. At
+this stage, we only need a swap buffer (we draw on one buffer while the other
+is displayed) and we use a full RGBA 32 bits color buffer (8 bits per
+channel).</p>
+<p>Let's consider again some data (in 2 dimensions):</p>
+<pre class="literal-block">
+data = numpy.zeros(4, dtype = [ (&quot;position&quot;, np.float32, 2),
+                                (&quot;color&quot;,    np.float32, 4)] )
+</pre>
+<div class="section" id="the-hard-way-opengl">
+<h2><a class="toc-backref" href="#id14">The hard way (OpenGL)</a></h2>
+<div class="section" id="building-the-program">
+<h3>Building the program</h3>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last"><tt class="docutils literal">vertex_code</tt> and <tt class="docutils literal">fragment_code</tt> correspond to the vertex and fragment shaders
+code as shown above.</p>
+</div>
+<p>Building the program is relatively straightforward provided we do not
+check for errors. First we need to request program and shader slots from GPU:</p>
+<pre class="literal-block">
+program  = gl.glCreateProgram()
+vertex   = gl.glCreateShader(gl.GL_VERTEX_SHADER)
+fragment = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
+</pre>
+<p>Then we can compile shaders into GPU objects:</p>
+<pre class="literal-block">
+# Set shaders source
+gl.glShaderSource(vertex, vertex_code)
+gl.glShaderSource(fragment, fragment_code)
+
+# Compile shaders
+gl.glCompileShader(vertex)
+gl.glCompileShader(fragment)
+</pre>
+<p>We can now build and link the program:</p>
+<pre class="literal-block">
+gl.glAttachShader(program, vertex)
+gl.glAttachShader(program, fragment)
+gl.glLinkProgram(program)
+</pre>
+<p>We can not get rid of shaders, they won't be used again:</p>
+<pre class="literal-block">
+gl.glDetachShader(program, vertex)
+gl.glDetachShader(program, fragment)
+</pre>
+<p>Finally, we make program the default program to be ran. We can do it now
+because we'll use a single in this example:</p>
+<pre class="literal-block">
+gl.glUseProgram(program)
+</pre>
+</div>
+<div class="section" id="building-the-buffer">
+<h3>Building the buffer</h3>
+<p>Building the buffer is even simpler:</p>
+<pre class="literal-block">
+# Request a buffer slot from GPU
+buffer = gl.glGenBuffers(1)
+
+# Make this buffer the default one
+gl.glBindBuffer(gl.GL_ARRAY_BUFFER, buffer)
+
+# Upload data
+gl.glBufferData(gl.GL_ARRAY_BUFFER, data.nbytes, data, gl.GL_DYNAMIC_DRAW)
+</pre>
+</div>
+<div class="section" id="binding-the-buffer-to-the-program">
+<h3>Binding the buffer to the program</h3>
+<p>Binding the buffer to the program needs some work and computations. We need to
+tell the GPU how to read the buffer and bind each value to the relevant
+attribute. To do this, GPU needs to kow what is the stride between 2
+consecutive element and what is the offset to read one attribute:</p>
+<pre class="literal-block">
+stride = data.strides[0]
+
+offset = ctypes.c_void_p(0)
+loc = gl.glGetAttribLocation(program, &quot;position&quot;)
+gl.glEnableVertexAttribArray(loc)
+gl.glBindBuffer(gl.GL_ARRAY_BUFFER, buffer)
+gl.glVertexAttribPointer(loc, 3, gl.GL_FLOAT, False, stride, offset)
+
+offset = ctypes.c_void_p(data.dtype[&quot;position&quot;].itemsize)
+loc = gl.glGetAttribLocation(program, &quot;color&quot;)
+gl.glEnableVertexAttribArray(loc)
+gl.glBindBuffer(gl.GL_ARRAY_BUFFER, buffer)
+gl.glVertexAttribPointer(loc, 4, gl.GL_FLOAT, False, stride, offset)
+</pre>
+<p>Here we're basically telling the program how to bind data to the relevant
+attribute. This is made by providing the stride of the array (how many bytes
+between each record) and the offset of a given attribute.</p>
+</div>
+<div class="section" id="binding-the-uniform">
+<h3>Binding the uniform</h3>
+<p>Binding the uniform is much more simpler. We request the location of the
+uniform and we upload the value using the dedicated function to upload one
+float only:</p>
+<pre class="literal-block">
+loc = gl.glGetUniformLocation(program, &quot;scale&quot;)
+gl.glUniform1f(loc, 1.0)
+</pre>
+</div>
+<div class="section" id="choosing-primitives">
+<h3>Choosing primitives</h3>
+<p>Before rendering, we need to tell OpenGL what to do with our vertices,
+i.e. what does these vertices describe in term of geometrical primitives.
+This is quite an important parameter since this determines how many fragments
+will be actually generated by the shape as illustrated on the image below:</p>
+<img alt="images/gl-primitives.png" src="images/gl-primitives.png" style="width: 75%;" />
+<p>There exist other primitives but we won't used them during this tutorial (and
+they're mainly related to <em>geometry shaders</em> that are not introduced in this
+tutorial). Since we want do display a square, we can use 2 triangles to make a
+square and thus we'll use a <tt class="docutils literal">GL_TRIANGLE_STRIP</tt> primitive. We'll see later
+how to make more complex shapes.</p>
+</div>
+<div class="section" id="setting-data">
+<h3>Setting data</h3>
+<p>We're almost ready to render something but let's first fill some values:</p>
+<pre class="literal-block">
+data['color']    = [ (1,0,0,1), (0,1,0,1), (0,0,1,1), (1,1,0,1) ]
+data['position'] = [ (-1,-1),   (-1,+1),   (+1,-1),   (+1,+1)   ]
+</pre>
+<p>If the color field makes sense (normalized RGBA values), why do we use
+coordinates such as (-1,-1) for vertex position ? We know the windows size is
+512x512 pixels in our case, so why not use (0,0) or (512,512) instead ?</p>
+<p>At this point in the tutorial, OpenGL does not really care of the actual size
+of the window (also called viewport) in terms of pixels. If you look at the
+GLUT code above, you may have noticed this line:</p>
+<pre class="literal-block">
+def reshape(width,height):
+    gl.glViewport(0, 0, width, height)
+</pre>
+<p>This function is called whenever the window is resized and the <tt class="docutils literal">glViewport</tt>
+call does two things. It instructs OpenGL of the current window size and it
+setup an implicit <em>normalized</em> coordinate system that goes from (-1,-1) (for the
+bottom-left corner) to (+1,+1) to top-right corner. Thus, our vertices position
+cover the whole window.</p>
+</div>
+<div class="section" id="rendering">
+<h3>Rendering</h3>
+<a class="reference external image-reference" href="scripts/hello-world-gl.py"><img alt="images/hello-world.png" class="align-right" src="images/hello-world.png" style="width: 15%;" /></a>
+<p>Ok, we're done, we can now rewrite the display function as:</p>
+<pre class="literal-block">
+def display():
+    gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+    gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, 4)
+    glut.glutSwapBuffers()
+</pre>
+<p>The 0, 4 arguments in the <tt class="docutils literal">glDrawArrays</tt> tells OpenGL we want to display 4
+vertices from our array and we start at vertex 0.</p>
+<p>Click on the image on the right to get the source.</p>
+</div>
+</div>
+<div class="section" id="the-easy-way-gloo">
+<h2><a class="toc-backref" href="#id15">The easy way (gloo)</a></h2>
+<a class="reference external image-reference" href="scripts/hello-world-gloo.py"><img alt="images/hello-world.png" class="align-right" src="images/hello-world.png" style="width: 15%;" /></a>
+<p>Since the above method is quite cumbersome, we'll now use the gloo interface.
+Now, we can just write:</p>
+<pre class="literal-block">
+program = gloo.Program(vertex, fragment, count=4)
+program['color']    = [ (1,0,0,1), (0,1,0,1), (0,0,1,1), (1,1,0,1) ]
+program['position'] = [ (-1,-1),   (-1,+1),   (+1,-1),   (+1,+1)   ]
+program['scale']    = 1.0
+</pre>
+<p>Gloo takes care of building the buffer because we specified the vertex count
+value and will also bind the relevant attributes and uniforms to the
+program provided. To render the scene, we can now write:</p>
+<pre class="literal-block">
+program.draw(gl.GL_TRIANGLE_STRIP)
+</pre>
+<p>Click on the image on the right to get the source.</p>
+</div>
+<div class="section" id="a-step-further">
+<h2><a class="toc-backref" href="#id16">A step further</a></h2>
+<a class="reference external image-reference" href="scripts/hello-world-gloo-scale.py"><img alt="images/hello-world-scale.png" class="align-right" src="images/hello-world-scale.png" style="width: 15%;" /></a>
+<p>The nice thing with gloo is that it takes care of any change in uniform or
+attribute values. If you change them through the program interface, these
+values will be updated on the GPU just-in-time. So, let's have some animation
+by making the scale value to oscillate betwen 0 and 1. To do this, we need a
+simple timer function where we'll update the scale value:</p>
+<pre class="literal-block">
+def timer(fps):
+    global clock
+    clock += 0.005 * 1000.0/fps
+    program['scale'] = np.cos(clock)
+    glut.glutTimerFunc(1000/fps, timer, fps)
+    glut.glutPostRedisplay()
+</pre>
+<p>Click on the image on the right to get the source.</p>
+</div>
+<div class="section" id="exercices">
+<h2><a class="toc-backref" href="#id17">Exercices</a></h2>
+<div class="section" id="quad-rotation">
+<h3>Quad rotation</h3>
+<a class="reference external image-reference" href="scripts/hello-world-gloo-rotate.py"><img alt="images/hello-world-rotate.png" class="align-right" src="images/hello-world-rotate.png" style="width: 15%;" /></a>
+<p>At this point, you can start experiencing on your own. For example, instead of
+scaling the quad, try to make it rotate. Note that you have access to the
+<tt class="docutils literal">sin</tt> and <tt class="docutils literal">cos</tt> function from within the shader.</p>
+</div>
+<div class="section" id="viewport-aspect">
+<h3>Viewport aspect</h3>
+<a class="reference external image-reference" href="scripts/hello-world-gloo-viewport-aspect.py"><img alt="images/hello-world-aspect.png" class="align-right" src="images/hello-world-aspect.png" style="width: 15%;" /></a>
+<p>Since the viewport is normalized, this means the aspect ratio of our quad is
+not always 1, it can become wider or taller, depending on how the actual shape
+of the window. How to change the reshape function (viewport call) to achieve a
+constant ratio of 1 (square) ?</p>
+</div>
+<div class="section" id="quad-aspect">
+<h3>Quad aspect</h3>
+<a class="reference external image-reference" href="scripts/hello-world-gloo-quad-aspect.py"><img alt="images/hello-world-aspect-2.png" class="align-right" src="images/hello-world-aspect-2.png" style="width: 15%;" /></a>
+<p>In the previous exercice, we manipulated the viewport such a to have a constant
+ratio of 1 for the viewport. We could however only manipulate the vertex
+position from within the shader, provided we know the size of the viewport, how
+would you do this ?</p>
+</div>
+</div>
+</div>
+<div class="section" id="hello-cubic-world">
+<h1><a class="toc-backref" href="#id18">Hello (cubic) world!</a></h1>
+<p><em>But... but, where is the 3D ? I want 3D ! I came to this tutorial because of 3D! Give me 3D !</em></p>
+<p>Actually, you've got all the pieces to render a 3D scene. Remember the bad news we talked about a few sections ago ?</p>
+<pre class="literal-block">
+You have to program everything, even the most basic things like projection and lighting.
+</pre>
+<p>So let's just do that.</p>
+<div class="section" id="projection-matrix">
+<h2><a class="toc-backref" href="#id19">Projection matrix</a></h2>
+<p>We need first to define what do we want to view, that is, we need to define a
+viewing volume such that any object within the volume (even partially) will be
+rendered while objects outside won't. On the image below, the yellow and red
+spheres are within the volume while the green one is not and does not appear on
+the projection.</p>
+<img alt="images/ViewFrustum.png" src="images/ViewFrustum.png" style="width: 60%;" />
+<p>There exist many different ways to project a 3D volume onto a 2D screen but
+we'll only use the <a class="reference external" href="https://en.wikipedia.org/wiki/Perspective_(graphical)">perspective projection</a> (distant objects
+appear smaller) and the <a class="reference external" href="https://en.wikipedia.org/wiki/Orthographic_projection_(geometry)">orthographic projection</a> which is a
+parallel projection (distant objects have the same size as closer ones) as
+illustrated on the image above. Until now (previous section), we have been
+using implicitly an orthographic projection in the z=0 plane.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">In older versions of OpenGL, these matrices were available as <a class="reference external" href="https://www.opengl.org/sdk/docs/man2/xhtml/glFrustum.xml">glFrustum</a> and <a class="reference external" href="https://www.opengl.org/sdk/docs/man2/xhtml/glOrtho.xml">glOrtho</a>.</p>
+</div>
+<p>Depending on the projection we want, we will use one of the two projection matrices
+below:</p>
+<p><strong>Perspective matrix</strong></p>
+<img alt="images/frustum-matrix.png" src="images/frustum-matrix.png" style="width: 40%;" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>Orthographic matrix</strong></p>
+<img alt="images/ortho-matrix.png" src="images/ortho-matrix.png" style="width: 40%;" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>At this point, it is not necessary to understand how these matrices were built.
+Suffice it to say they are standard matrices in the 3D world. Both suppose the
+viewer (=camera) is located at position (0,0,0) and is looking in the direction
+(0,0,1).</p>
+<p>There exists a second form of the perpective matrix that might be easier to
+manipulate. Instead of specifying the right/left/top/bottom planes, we'll use
+field of view in the horizontal and vertical direction:</p>
+<p><strong>Perspective matrix</strong></p>
+<img alt="images/perspective-matrix.png" src="images/perspective-matrix.png" style="width: 40%;" />
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>where <tt class="docutils literal">fovy</tt> specifies the field of view angle, in degrees, in the y
+direction and <tt class="docutils literal">aspect</tt> specifies the aspect ratio that determines the field
+of view in the x direction.</p>
+</div>
+<div class="section" id="model-and-view-matrices">
+<h2><a class="toc-backref" href="#id20">Model and view matrices</a></h2>
+<p>We are almost done with matrices. You may have guessed that the above matrix
+requires the viewing volume to be in the z direction. We could design our 3D
+scene such that all objects are withing this direction but it would not be very
+convenient. So instead, we'll use a view matrix that will map the the world
+space to camera space. This is pretty much as if we were orienting the camera
+at a given position and look toward a given direction. In the meantime, we can
+further refine the whole pipeline by providing a model matrix that will maps
+the object's local coordinate space into world space. For example, this wil be
+useful for rotating an object around its center. To sum up, we need:</p>
+<ul class="simple">
+<li><tt class="docutils literal">•</tt> <strong>Model matrix</strong> maps from an object's local coordinate space into world space</li>
+<li><tt class="docutils literal">•</tt> <strong>View matrix</strong> maps from world space to camera space</li>
+<li><tt class="docutils literal">•</tt> <strong>Projection matrix</strong> maps from camera to screen space</li>
+</ul>
+</div>
+<div class="section" id="building-cube">
+<h2><a class="toc-backref" href="#id21">Building cube</a></h2>
+<p>We need to define what we mean by a <em>cube</em> since there is not such thing as as
+cube in OpenGL. A cube, when seen from the outside has 6 faces, each being a
+square. We just saw that to render a square, we need two triangles. So, 6
+faces, each of them being made of 2 triangles, we need 12 triangles.</p>
+<p>How many vertices then ? 12 triangles ? 3 vertices per triangles ? 36 vertices
+might be a reasonable answer but we can also notice that each vertex is part of
+3 different faces actually, so instead we'll use no more than 8 vertices and
+tell explicitly OpenGL what to draw with them:</p>
+<pre class="literal-block">
+V = np.zeros(8, [(&quot;position&quot;, np.float32, 3)])
+V[&quot;position&quot;] = [[ 1, 1, 1], [-1, 1, 1], [-1,-1, 1], [ 1,-1, 1],
+                 [ 1,-1,-1], [ 1, 1,-1], [-1, 1,-1], [-1,-1,-1]]
+</pre>
+<p>These describes vertices of a cube cented on (0,0,0) that goes from (-1,-1,-1)
+to (+1,+1,+1). Then we compute (mentally) what are the triangles for each face, i.e. we
+describe triangles in terms of vertices index (relatively to the <tt class="docutils literal">V</tt> array we
+just defined):</p>
+<pre class="literal-block">
+I = [0,1,2, 0,2,3,  0,3,4, 0,4,5,  0,5,6, 0,6,1,
+     1,6,7, 1,7,2,  7,4,3, 7,3,2,  4,7,6, 4,6,5]
+</pre>
+<p>We now need to upload these data to the GPU. Using gloo, the easiest way is to use a VertexBuffer for vertices data and an IndexBuffer for indices data:</p>
+<pre class="literal-block">
+vertices = gloo.VertexBuffer(V)
+indices = gloo.IndexBuffer(I)
+</pre>
+</div>
+<div class="section" id="building-matrices">
+<h2><a class="toc-backref" href="#id22">Building matrices</a></h2>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">Note that the view matrix is a translation along z. We actually move away
+from the center while looking into the (positive) z direction.</p>
+</div>
+<p>All the common matrix operations can be found in the <a class="reference external" href="scripts/transforms.py">transforms.py</a> script which define ortho, frustum and perspective
+matrices as well as rotation, translation and scaling operations. We won't say
+much more about these and you might want to read a book about geometry to
+understand how this work, especially when compositing rotation, translation and
+scaling (order is important):</p>
+<pre class="literal-block">
+view = np.eye(4,dtype=np.float32)
+model = np.eye(4,dtype=np.float32)
+projection = np.eye(4,dtype=np.float32)
+translate(view, 0,0,-5)
+program['model'] = model
+program['view'] = view
+program['projection'] = projection
+phi, theta = 0,0
+</pre>
+<p>It is now important to update the projection matrix whenever the window is
+resized (because aspect ratio may have changed):</p>
+<pre class="literal-block">
+def reshape(width,height):
+    gl.glViewport(0, 0, width, height)
+    projection = perspective( 45.0, width/float(height), 2.0, 10.0 )
+    program['projection'] = projection
+</pre>
+</div>
+<div class="section" id="id1">
+<h2><a class="toc-backref" href="#id23">Rendering</a></h2>
+<a class="reference external image-reference" href="scripts/rotating-cube.py"><img alt="images/rotating-cube.png" class="align-right" src="images/rotating-cube.png" style="width: 20%;" /></a>
+<p>Rotating the cube means computing a model matrix such that the cube rotate
+around its center. We'll do that in the timer function and rotate the cube
+around the z axis (theta), then around the y axis (phi):</p>
+<pre class="literal-block">
+def timer(fps):
+    global theta, phi
+    theta += .5
+    phi += .5
+    model = np.eye(4, dtype=np.float32)
+    rotate(model, theta, 0,0,1)
+    rotate(model, phi, 0,1,0)
+    program['model'] = model
+    glut.glutTimerFunc(1000/fps, timer, fps)
+    glut.glutPostRedisplay()
+</pre>
+<p>We're now alsmost ready to render the whole scene but we need first to modify
+the GLUT initialization a little bit. Previously, we used:</p>
+<pre class="literal-block">
+glut.glutInitDisplayMode(glut.GLUT_DOUBLE | glut.GLUT_RGBA)
+</pre>
+<p>But now, we're explicity dealing with 3D, meaning some rendered triangles may
+be behind some others and we don't want to handle rendering order to deal with
+that. OpenGL will take care of that provided we declared we'll use a depth
+buffer. We thus need to modify glut initialization as and to tell OpenGL to use
+the depth buffer:</p>
+<pre class="literal-block">
+glut.glutInitDisplayMode(glut.GLUT_DOUBLE | glut.GLUT_RGBA | glut.GLUT_DEPTH)
+gl.glEnable(gl.GL_DEPTH_TEST)
+</pre>
+<p>and when clear the scene, we have to take care of clearing the depth buffer as well:</p>
+<pre class="literal-block">
+gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+</pre>
+<p>Finally, to render the cube using the specified triangles, we write:</p>
+<pre class="literal-block">
+program.draw(gl.GL_TRIANGLES, indices)
+</pre>
+<p>Click on the image on the right to get the source.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+<div class="line"><br /></div>
+</div>
+<p><em>But is't ugly !</em> Yes, of course !</p>
+<p>We have no color (but red), no texture and no light. What did you expect ?</p>
+</div>
+</div>
+<div class="section" id="id2">
+<h1><a class="toc-backref" href="#id24">A step further</a></h1>
+<p>I feel you're a bit frustated so let's build a nice colored, outlined, lighted
+rotating cube.</p>
+<div class="section" id="colored-cube">
+<h2><a class="toc-backref" href="#id25">Colored cube</a></h2>
+<a class="reference external image-reference" href="scripts/colored-cube.py"><img alt="images/colored-cube.png" class="align-right" src="images/colored-cube.png" style="width: 20%;" /></a>
+<p>Now we'll discover why <strong>gloo</strong> is so useful. To add color per vertex to the
+cube, we simply define the vertex structure as:</p>
+<pre class="literal-block">
+V = np.zeros(8, [(&quot;position&quot;, np.float32, 3),
+                 (&quot;color&quot;,    np.float32, 4)])
+V[&quot;position&quot;] = [[ 1, 1, 1], [-1, 1, 1], [-1,-1, 1], [ 1,-1, 1],
+                 [ 1,-1,-1], [ 1, 1,-1], [-1, 1,-1], [-1,-1,-1]]
+V[&quot;color&quot;]    = [[0, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1], [0, 1, 0, 1],
+                 [1, 1, 0, 1], [1, 1, 1, 1], [1, 0, 1, 1], [1, 0, 0, 1]]
+</pre>
+<p>And we're done ! Well, actually, we also need to slightly modify the vertex
+shader since <tt class="docutils literal">color</tt> is now an attribute and not a uniform.</p>
+<p>Click on the image on the right to get the source.</p>
+</div>
+<div class="section" id="outlined-cube">
+<h2><a class="toc-backref" href="#id26">Outlined cube</a></h2>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">From now on, we'll use prefixes to distinguish uniforms (u_), attributes
+(a_) and varyings (v_) in shader sources and buffers fields.</p>
+</div>
+<a class="reference external image-reference" href="scripts/outlined-cube.py"><img alt="images/outlined-cube.png" class="align-right" src="images/outlined-cube.png" style="width: 20%;" /></a>
+<p>To outline the cube, we need to draw lines between couple of vertices on each
+face. 4 lines for the back and front face and 2 lines for the top and bottom
+faces. Why only 2 lines for top and bottom ? Because lines are shared between
+the faces. So overall we need 12 lines and we need to compute the corresponding
+indices (I did it for your):</p>
+<pre class="literal-block">
+O = [0,1, 1,2, 2,3, 3,0,
+     4,7, 7,6, 6,5, 5,4,
+     0,5, 1,6, 2,7, 3,4 ]
+outline = IndexBuffer(O)
+</pre>
+<p>Then we draw the cube twice. One time using triangles and the indices index
+buffer and one time using lines with the outline index buffer.  We need also to
+add some OpenGL black magic to make things nice. It's not very important to
+understand it at this point. The main it solves it to make sure line is &quot;above&quot;
+the cube because we paint a line on a surface.</p>
+<p>Click on the image on the right to get the source.</p>
+</div>
+<div class="section" id="textured-cube">
+<h2><a class="toc-backref" href="#id27">Textured cube</a></h2>
+<p>To be written.</p>
+</div>
+<div class="section" id="lighted-cube">
+<h2><a class="toc-backref" href="#id28">Lighted cube</a></h2>
+<a class="reference external image-reference" href="scripts/lighted-cube.py"><img alt="images/lighted-cube.png" class="align-right" src="images/lighted-cube.png" style="width: 20%;" /></a>
+<p>To have a lighted cube we need two things: a light source and surface
+normals. Then we can apply light equation on each fragment depending on the
+amount of light it receives. This is computed using the suface normal.</p>
+<p>But we have a problem to solve. We need to compute normals for each surfaces,
+which is rather easy but we need to give this information to the GPU via the
+vertex structure. Since our vertices are shared between all the surfaces, it is
+a problem. If you look at any vertex, you'll see it is shared between 3
+distinct faces, each having a different normal. This means we'll have to
+duplicate our vertices and to attach the right normal vector depending on the
+face they belong. Hence, we now need 4 distinct vertices for each faces for a
+total of 24 vertices.</p>
+<p>The actual building of this new cube data is rather boring and I won't
+detailed it here. The whole code is available from <a class="reference external" href="scripts/cube.py">cube.py</a>
+that has a single <tt class="docutils literal">cube</tt> function that return cube vertices, faces and
+outlines as 3 numpy arrays.</p>
+<p>We can now define a light using a position and an intensity (color). This is
+called a positional point light which send light in any direction (as opposed
+for example to adirectional light such as a spotlight). There exist many
+different light models and this one is probably the simplest. I won't explain
+everything here (it would require a full tutorial only for this topic), but
+here is the resulting fragment shader which is pretty self-explanatory:</p>
+<pre class="literal-block">
+uniform mat4 u_model;
+uniform mat4 u_view;
+uniform mat4 u_normal;
+
+uniform vec3 u_light_intensity;
+uniform vec3 u_light_position;
+
+varying vec3 v_position;
+varying vec3 v_normal;
+varying vec4 v_color;
+
+void main()
+{
+  // Calculate normal in world coordinates
+  vec3 normal = normalize(u_normal * vec4(v_normal,1.0)).xyz;
+
+  // Calculate the location of this fragment (pixel) in world coordinates
+  vec3 position = vec3(u_view*u_model * vec4(v_position, 1));
+
+  // Calculate the vector from this pixels surface to the light source
+  vec3 surfaceToLight = u_light_position - position;
+
+  // Calculate the cosine of the angle of incidence (brightness)
+  float brightness = dot(normal, surfaceToLight) / (length(surfaceToLight) * length(normal));
+  brightness = max(min(brightness,1.0),0.0);
+
+  // Calculate final color of the pixel, based on:
+  // 1. The angle of incidence: brightness
+  // 2. The color/intensities of the light: light.intensities
+  // 3. The texture and texture coord: texture(tex, fragTexCoord)
+
+  gl_FragColor = v_color * brightness * vec4(u_light_intensity, 1);
+}
+</pre>
+<p>Click on the image on the right to get the source.</p>
+</div>
+</div>
+<div class="section" id="gloo-api">
+<h1><a class="toc-backref" href="#id29">Gloo API</a></h1>
+<div class="section" id="vertex-buffer">
+<h2><a class="toc-backref" href="#id30">Vertex Buffer</a></h2>
+<p>A VertexBuffer represents vertex data that can be uploaded to GPU memory. They
+can have a local (CPU) copy or not such that in the former case, the buffer is
+read-write while in the latter case, the buffer is write-only.</p>
+<p>The (internal) shape of a vertex buffer is always one-dimensional.</p>
+<p>The (internal) dtype of a vertex buffer is always structured.</p>
+<p>Elementary allowed dtype are:
+np.uint8, np.int8, np.uint16, np.int16, np.float32, np.float16</p>
+<p>All GPU operations are deferred and executed just-in time (automatic).</p>
+<div class="section" id="default-parameter">
+<h3>Default parameter</h3>
+<p>store = True, copy = False, resizeable = True</p>
+</div>
+<div class="section" id="creation-from-existing-data">
+<h3>Creation from existing data</h3>
+<p>Use given data as CPU storage:</p>
+<pre class="literal-block">
+V = VertexBuffer(data=data, store=True, copy=False)
+</pre>
+<p>Use a copy of given data as CPU storage:</p>
+<pre class="literal-block">
+V = VertexBuffer(data=data, store=True, copy=True)
+</pre>
+<p>Do not use CPU storage:</p>
+<pre class="literal-block">
+V = VertexBuffer(data=data, store=False)
+</pre>
+</div>
+<div class="section" id="creation-from-dtype-and-size">
+<h3>Creation from dtype and size</h3>
+<p>Create a CPU storage with given size:</p>
+<pre class="literal-block">
+V = VertexBuffer(dtype=dtype, size=size, store=True)
+</pre>
+<p>Do not use CPU storage:</p>
+<pre class="literal-block">
+V = VertexBuffer(dtype=dtype, size=size, store=False)
+</pre>
+</div>
+<div class="section" id="setting-data-set-data">
+<h3>Setting data (set_data)</h3>
+<p>Any contiguous block of data can be set using the <tt class="docutils literal">set_data</tt> method. This
+method can also be used to resize the buffer. When setting data, it is possible
+to specify whether to store a copy of given data hence freezing the state of
+the data. It is important because the actual upload is deferred and data can be
+changed before the actual upload occurs.</p>
+<p>This example results in 2 pending operations but only the &quot;2&quot; value will be
+uploaded (2 in data[:10] and 2 in data[10:]):</p>
+<pre class="literal-block">
+V = VertexBuffer(...)
+data[...] = 1
+V.set_data(data[:10], copy=False)
+data[...] = 2
+V.set_data(data[10:], copy=False)
+</pre>
+<p>This example results in 2 pending operations and the &quot;1&quot; and &quot;2&quot; values will
+actually be uploaded (1 in data[:10] and 2 in data[10:]):</p>
+<pre class="literal-block">
+V = VertexBuffer(...)
+data[...] = 1
+V.set_data(data[:10], copy=True)
+data[...] = 2
+V.set_data(data[10:], copy=True)
+</pre>
+</div>
+<div class="section" id="setting-data-setitem">
+<h3>Setting data (setitem)</h3>
+<p>If buffer has CPU storage, any numpy operations is allowed since the operation
+is performed on CPU data and modified part are registered for uploading:</p>
+<pre class="literal-block">
+V = VertexBuffer(...)
+V[:10] = data # ok
+V[::2] = data # ok
+</pre>
+<p>If buffer has no CPU storage, only numpy operations that affect a contiguous
+block of data are allowed. This restriction is necessary because we cannot
+upload strided data:</p>
+<pre class="literal-block">
+V = VertexBuffer(...)
+V[:10] = data # ok
+V[::2] = data # error
+</pre>
+</div>
+<div class="section" id="getting-data-getitem">
+<h3>Getting data (getitem)</h3>
+<p>Accessing data from a VertexBuffer (base) returns a VertexBuffer (view) that is
+linked to the base buffer. Accessing data from a buffer view is not allowed:</p>
+<pre class="literal-block">
+V = VertexBuffer(...)
+Z1 = V[:10] # ok
+V[...] = 1  # ok
+Z2 = Z1[:5] # error
+</pre>
+</div>
+<div class="section" id="resizing-the-buffer">
+<h3>Resizing the buffer</h3>
+<p>Whenever a buffer is resized, all pending operations are cleared and any existing
+view on the buffer becomes invalid.</p>
+</div>
+</div>
+<div class="section" id="index-buffer">
+<h2><a class="toc-backref" href="#id31">Index Buffer</a></h2>
+<p>A IndexBuffer represents indices data that can be uploaded to GPU memory. They
+can have a local (CPU) copy or not such that in the former case, the buffer is
+read-write while in the latter case, the buffer is write-only.</p>
+<p>The shape of an index buffer is always one-dimensional.</p>
+<p>The dtype of an index buffer is one of: np.uint8, np.uint16, np.uint32</p>
+<p>All GPU operations are deferred and executed just-in time (automatic).</p>
+<p>All vertex buffer methods and properties apply.</p>
+</div>
+<div class="section" id="program">
+<h2><a class="toc-backref" href="#id32">Program</a></h2>
+<p>A program is an object to which shaders can be attached and linked to create
+the program. It gives access to attributes and uniform through the
+getitem/setitem.</p>
+<div class="section" id="first-version-implicit-buffer">
+<h3>First version (implicit buffer)</h3>
+<p>If a vertex count is given at creation, a unique associated vertex buffer is
+created automatically:</p>
+<pre class="literal-block">
+program = Program(vertex, fragment, count=4)
+program['a_color']    = [ (1,0,0,1), (0,1,0,1), (0,0,1,1), (1,1,0,1) ]
+program['a_position'] = [ (-1,-1),   (-1,+1),   (+1,-1),   (+1,+1)   ]
+</pre>
+</div>
+<div class="section" id="second-version-direct-upload">
+<h3>Second version (direct upload)</h3>
+<p>If one wants to directly upload data (without intermediary vertex buffer), one
+has to explicitly set the direct upload flag at creation:</p>
+<pre class="literal-block">
+program = Program(vertex, fragment, direct=True)
+program['a_color']    = [ (1,0,0,1), (0,1,0,1), (0,0,1,1), (1,1,0,1) ]
+program['a_position'] = [ (-1,-1),   (-1,+1),   (+1,-1),   (+1,+1)   ]
+</pre>
+</div>
+<div class="section" id="third-version-explicit-grouped-binding">
+<h3>Third version (explicit grouped binding)</h3>
+<p>It is also possible to create vertex buffer and bind it automatically to the
+program, provided buffer field names and attributes match:</p>
+<pre class="literal-block">
+program = Program(vertex, fragment)
+vertices = np.zeros(4, [('a_position', np.float32, 2),
+                        ('a_color',    np.float32, 4)])
+program.bind(VertexBuffer(vertices)
+program['a_color'] = [ (1,0,0,1), (0,1,0,1), (0,0,1,1), (1,1,0,1) ]
+program['a_position'] = [ (-1,-1),   (-1,+1),   (+1,-1),   (+1,+1)   ]
+</pre>
+</div>
+<div class="section" id="fourth-version-explicit-binding">
+<h3>Fourth version (explicit binding)</h3>
+<p>Finally, for finer grain control, one can explicitly set each attribute or
+uniform individually:</p>
+<pre class="literal-block">
+program = Program(vertex, fragment)
+position = VertexBuffer(np.zeros((4,2), np.float32))
+position[:] = [((-1,-1),), ((-1,+1),), ((+1,-1),), ((+1,+1),)]
+program['a_position'] = position
+color = VertexBuffer(np.zeros((4,4), np.float32))
+color[:] = [((1,0,0,1),), ((0,1,0,1),), ((0,0,1,1),), ((1,1,0,1),)]
+program['a_color'] = color
+</pre>
+</div>
+</div>
+<div class="section" id="texture">
+<h2><a class="toc-backref" href="#id33">Texture</a></h2>
+<p>Textures represent texture data that can be uploaded to GPU memory. They
+can have a local (CPU) copy or not such that in the former case, the texture is
+read-write while in the latter case, the texture is write-only.</p>
+<p>The (internal) shape of a texture is the size of the class +1:</p>
+<blockquote>
+<ul class="simple">
+<li>Texture1D -&gt; shape is two-dimensional (width, 1/2/3/4)</li>
+<li>Texture2D -&gt; shape is three-dimensional (height, width, 1/2/3/4)</li>
+</ul>
+</blockquote>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>The (internal) dtype of a texture is one of: <tt class="docutils literal">np.int8</tt>, <tt class="docutils literal">np.uint8</tt>,
+<tt class="docutils literal">np.int16</tt>, <tt class="docutils literal">np.uint16</tt>, <tt class="docutils literal">np.int32</tt>, <tt class="docutils literal">np.uint32</tt>, <tt class="docutils literal">np.float32</tt></p>
+<div class="section" id="id3">
+<h3>Creation from existing data</h3>
+<p>When creating a texture, the GPU format (RGB, RGBA,etc) of the texture is
+deduced from the data dtype and shape.</p>
+<blockquote>
+<p>1 : gl.GL_LUMINANCE</p>
+<p>2 : gl.GL_LUMINANCE_ALPHA</p>
+<p>3 : gl.GL_RGB</p>
+<p>4 : gl.GL_RGBA</p>
+</blockquote>
+<p>Use given data as CPU storage:</p>
+<pre class="literal-block">
+T = Texture2D(data=data, store=True, copy=False)
+</pre>
+<p>Use a copy of given data as CPU storage:</p>
+<pre class="literal-block">
+V = Texture2D(data=data, store=True, copy=True)
+</pre>
+<p>Do not use CPU storage:</p>
+<pre class="literal-block">
+V = Texture2D(data=data, store=False)
+</pre>
+</div>
+<div class="section" id="id4">
+<h3>Creation from dtype and size</h3>
+<p>When creating a texture, the GPU format (RGB, RGBA,etc) of the texture is
+deduced from the dtype and the shape:</p>
+<p>Create a CPU storage with given size:</p>
+<pre class="literal-block">
+V = Texture2D(dtype=dtype, shape=shape, store=True)
+</pre>
+<p>Do not use CPU storage:</p>
+<pre class="literal-block">
+V = Texture2D(dtype=dtype, shape=shape, store=False)
+</pre>
+</div>
+<div class="section" id="id5">
+<h3>Setting data (setitem)</h3>
+<p>If texture has CPU storage, any numpy operations is allowed since the operation
+is performed on CPU data and modified part are registered for uploading:</p>
+<pre class="literal-block">
+V = Texture2D(...)
+V[:10] = data # ok
+V[::2] = data # ok
+</pre>
+<p>If texture has no CPU storage, only numpy operations that affect a contiguous
+block of data are allowed. This restriction is necessary because we cannot
+upload strided data:</p>
+<pre class="literal-block">
+V = Texture2D(...)
+V[:10] = data # ok
+V[::2] = data # error
+</pre>
+</div>
+<div class="section" id="id6">
+<h3>Getting data (getitem)</h3>
+<p>Accessing data from a Texture (base) returns a Texture (view) that is linked to
+the base texture. Accessing data from a texture view is not allowed:</p>
+<pre class="literal-block">
+V = Texture2D(...)
+Z1 = V[:10] # ok
+V[...] = 1  # ok
+Z2 = Z1[:5] # error
+</pre>
+</div>
+<div class="section" id="resizing-the-texture">
+<h3>Resizing the texture</h3>
+<p>Whenever a texture is resized, all pending operations are cleared and any
+existing view on the texture becomes invalid.</p>
+</div>
+</div>
+</div>
+<div class="section" id="beyond-this-tutorial">
+<h1><a class="toc-backref" href="#id34">Beyond this tutorial</a></h1>
+<p>There exist a lot of resources on the web related to OpenGL. I only mention
+here a few of them that deals with the dynamic rendering pipeline. If you've
+found other resources, make sure they deal with the dynamic rendering pipeline
+and not the fixed one.</p>
+<div class="section" id="tutorials-books">
+<h2><a class="toc-backref" href="#id35">Tutorials / Books</a></h2>
+<p><strong>An intro to modern OpenGL</strong> by Joe Groff.</p>
+<p>OpenGL has been around a long time, and from reading all the accumulated layers
+of documentation out there on the Internet, it's not always clear what parts
+are historic and what parts are still useful and supported on modern graphics
+hardware. It's about time for a new OpenGL <a class="reference external" href="http://duriansoftware.com/joe/An-intro-to-modern-OpenGL.-Table-of-Contents.html">introduction that</a> walks through the parts that are still relevant today.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>Learning Modern 3D Graphics Programming</strong> by Jason L. McKesson</p>
+<p>This <a class="reference external" href="http://www.arcsynthesis.org/gltut/">book</a> is intended to teach you how
+to be a graphics programmer. It is not aimed at any particular graphics field;
+it is designed to cover most of the basics of 3D rendering. So if you want to
+be a game developer, a CAD program designer, do some computer visualization, or
+any number of things, this book can still be an asset for you. This does not
+mean that it covers everything there is about 3D graphics. Hardly. It tries to
+provide a sound foundation for your further exploration in whatever field of 3D
+graphics you are interested in.</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>An Introduction to OpenGL Programming</strong></p>
+<p>This <a class="reference external" href="https://www.youtube.com/watch?v=T8gjVbn8VBk&amp;feature=player_embedded">introduction</a>
+provides an accelerated introduction to programming OpenGL, emphasizing the
+most modern methods for using the library. In recent years, OpenGL has
+undergone numerous updates, which have fundamentally changed how programmers
+interact with the application programming interface (API) and the skills
+required for being an effective OpenGL programmer. The most notable of these
+changes, the introduction of shader-based rendering, has expanded to subsume
+almost all functionality in OpenGL. This course is presented by Edward Angel of
+the University of New Mexico and Dave Shreiner of ARM, Inc..</p>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>OpenGL ES 2.0 documentation</strong></p>
+<p><a class="reference external" href="https://www.khronos.org/opengles/2_X/">OpenGL ES 2.0</a> is defined relative to
+the OpenGL 2.0 specification and emphasizes a programmable 3D graphics pipeline
+with the ability to create shader and program objects and the ability to write
+vertex and fragment shaders in the OpenGL ES Shading Language. Vispy is based
+on OpenGL ES 2.0 because it give access to the programmable pipeline while
+keeping overall complexity tractable.</p>
+</div>
+<div class="section" id="vispy-documentation">
+<h2><a class="toc-backref" href="#id36">Vispy documentation</a></h2>
+<p>The vispy <a class="reference external" href="http://vispy.readthedocs.org/en/v0.2.1/">documentation</a> is also a
+good source of information.</p>
+</div>
+<div class="section" id="mailing-lists">
+<h2><a class="toc-backref" href="#id37">Mailing lists</a></h2>
+<p>There is a <a class="reference external" href="https://groups.google.com/forum/#!forum/vispy">user mailing list</a> where you can ask for help on
+vispy and a <a class="reference external" href="https://groups.google.com/forum/#!forum/vispy-dev">developers mailing list</a> that is more technical.</p>
+</div>
+</div>
+</div>
+</body>
+</html>

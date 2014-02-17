@@ -1,0 +1,16 @@
+\documentclass{article}
+\thispagestyle{empty}
+
+\begin{document}
+
+$$
+  P =
+\left[ \begin{array}{cccc}
+    \frac{f}{aspect}  & 0 & 0 & 0\\
+    0 & f & 0 & 0\\
+    0 & 0 &  \frac{far+near}{near-far} & \frac{2~near~far}{near-far} \\
+    0 & 0 & -1 & 0
+  \end{array} \right] \mbox{ with } f = cotangent(\frac{fovy}{2})
+$$
+
+\end{document}
