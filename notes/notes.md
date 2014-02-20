@@ -5,8 +5,7 @@ Tasks
 
 ### Core Vispy
 
-* Review Nicolas' gloo changes
-* Update gloo to avoid using the output of glGetUniforms in a loop (**need for WebGL**)
+* Update gloo to avoid using the output of glGet* in a loop (**need for WebGL**)
 * Review Luke's shader composition system
 * Visuals & scene graph
   * Review Luke and Almar's prototype code.
@@ -25,6 +24,7 @@ Tasks
 * Discuss Almar's own OpenGL wrapper
 * Tackle Github issues
 * How to share OpenGL contexts between different Qt widgets? (share GPU memory)
+* Test PyOpenGL dropin on Windows (CR)
 
 
 ### Examples/demos (gloo)
