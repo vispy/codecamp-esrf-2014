@@ -9,6 +9,7 @@ Tasks
 * Implement examples with Luke's code
   * pannable & zoomable 2D plot
   * ...
+* Mechanism to use non ES-2.0 features (Exception if extension used is not available)
 * WebGL
   * Implement online backend (or prototype)
   * test whether the scene graph pan & zoom example can accept a custom Python
