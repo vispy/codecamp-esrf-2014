@@ -14,6 +14,8 @@ Tasks
   * Discuss how to integrate automated collections into all this
   * Refine the API ...
 * Mechanism to use non ES-2.0 features (Exception if extension used is not available)
+* Discuss dependencies for fast code
+* Out of core plotting?
 * WebGL
   * Implement online backend (or prototype)
   * test whether the scene graph pan & zoom example can accept a custom Python
