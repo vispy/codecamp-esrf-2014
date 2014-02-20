@@ -24,6 +24,7 @@ Tasks
     object instead of actual numbers for mouse position
 * Discuss Almar's own OpenGL wrapper
 * Tackle Github issues
+* How to share OpenGL contexts between different Qt widgets? (share GPU memory)
 
 
 ### Examples/demos (gloo)
