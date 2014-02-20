@@ -1,6 +1,8 @@
 Tasks
 -----
 
+(also see https://github.com/vispy/vispy/wiki/Vispy-code-camp-@ESRF#Goals)
+
 ### Core Vispy
 
 * Review Nicolas' gloo changes
