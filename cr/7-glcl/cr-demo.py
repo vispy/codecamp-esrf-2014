@@ -11,16 +11,13 @@ DEVICE = 0
 
 # OpenCL kernel that generates a sine function.
 clkernel = """
-__kernel void clkernel(__global float2* clpos, __global float2* glpos)
+__kernel void clkernel(__global float2* glpos)
 {
     //get our index in the array
     unsigned int i = get_global_id(0);
 
-    // copy the x coordinate from the CL buffer to the GL buffer
-    glpos[i].x = clpos[i].x;
-
     // calculate the y coordinate and copy it on the GL buffer
-    glpos[i].y = 0.5f * sin(10.0f * clpos[i].x);
+    glpos[i].y = 0.5f * sin(10.0f * glpos[i].x);
 }
 """
 
@@ -62,28 +59,17 @@ class GLPlotWidget(QGLWidget):
         """Initialize OpenGL and OpenCL buffers and interop objects,
         and compile the OpenCL kernel.
         """
-        # empty OpenGL VBO
-        data = np.zeros(self.data.shape, dtype=np.float32)
-        self.glbuf = gloo.VertexBuffer(data=data)
+        self.glbuf = gloo.VertexBuffer(data=self.data)
         self.prog = gloo.Program(vertex,fragment)
         self.prog["position"] = self.glbuf
 
-
-
-        #self.glbuf = glvbo.VBO(data=data,
-        #                       usage=gl.GL_DYNAMIC_DRAW,
-        #                       target=gl.GL_ARRAY_BUFFER)
-        #self.glbuf.bind()
         self.glbuf.activate()
+        # WARNING: it seems that on some systems, the CL initialization
+        # NEEDS to occur AFTER the activation of the GL object.
         # initialize the CL context
         self.ctx, self.queue = clinit()
-        # create a pure read-only OpenCL buffer
-        self.clbuf = cl.Buffer(self.ctx,
-                            cl.mem_flags.READ_ONLY | cl.mem_flags.COPY_HOST_PTR,
-                            hostbuf=self.data)
         # create an interop object to access to GL VBO from OpenCL
         self.glclbuf = cl.GLBuffer(self.ctx, cl.mem_flags.READ_WRITE,
-                                   #int(self.glbuf.buffers[0])
                                    int(self.glbuf.handle))
         # build the OpenCL program
         self.program = cl.Program(self.ctx, clkernel).build()
@@ -96,14 +82,12 @@ class GLPlotWidget(QGLWidget):
         # get secure access to GL-CL interop objects
         cl.enqueue_acquire_gl_objects(self.queue, [self.glclbuf])
         # arguments to the OpenCL kernel
-        kernelargs = (self.clbuf,
-                      self.glclbuf)
+        kernelargs = (self.glclbuf,)
         # execute the kernel
         self.program.clkernel(self.queue, (self.count,), None, *kernelargs)
         # release access to the GL-CL interop objects
         cl.enqueue_release_gl_objects(self.queue, [self.glclbuf])
         self.queue.finish()
-
 
     def update_buffer(self):
         """Update the GL buffer from the CL buffer
@@ -126,7 +110,6 @@ class GLPlotWidget(QGLWidget):
         """
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         self.prog.draw(gl.GL_POINTS)
-
 
     def resizeGL(self, width, height):
         """Called upon window resizing: reinitialize the viewport. """
