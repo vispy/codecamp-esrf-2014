@@ -13,7 +13,7 @@ kernel = """
 __kernel void clkernel(__global float2* glpos)
 {
     unsigned int i = get_global_id(0);
-    // The call above does nothing: this is just to test the overhead
+    // The call below does nothing: this is just to test the overhead
     // of calling an OpenCL kernel at each frame.
     glpos[i].y *= 1;
 }
