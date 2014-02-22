@@ -19,6 +19,7 @@ uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_projection;
 uniform vec3 u_light_position;
+uniform vec3 u_light_spec_position;
 
 attribute vec3  a_position;
 attribute vec3  a_color;
@@ -53,6 +54,7 @@ uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_projection;
 uniform vec3 u_light_position;
+uniform vec3 u_light_spec_position;
 
 varying vec3  v_color;
 varying vec4  v_eye_position;
@@ -71,11 +73,20 @@ void main()
     float z = sqrt(d);
     vec4 pos = v_eye_position;
     pos.z += v_radius*z;
+    vec3 pos2 = pos.xyz;
     pos = u_projection * pos;
     gl_FragDepth = 0.5*(pos.z / pos.w)+0.5;
     vec3 normal = vec3(x,y,z);
     float diffuse = clamp(dot(normal, v_light_direction), 0.0, 1.0);
-    gl_FragColor.rgb = .15*v_color +  .85*diffuse * v_color;
+    
+    // Specular lighting.
+    vec3 M = pos2.xyz;
+    vec3 O = v_eye_position.xyz;
+    vec3 L = u_light_spec_position;
+    vec3 K = normalize(normalize(L - M) + normalize(O - M));
+    float specular = clamp(pow(dot(normal, K), 50.), 0.0, 1.0);
+    vec3 v_light = vec3(1., 1., 1.);
+    gl_FragColor.rgb = .15*v_color +  .55*diffuse * v_color + .35*specular * v_light;
 }
 """
 
@@ -133,7 +144,8 @@ class MolecularViewerCanvas(app.Canvas):
         
         self.program['u_model'] = self.model
         self.program['u_view'] = self.view
-        self.program['u_light_position'] = 0,0,2
+        self.program['u_light_position'] = 0., 0., 2.
+        self.program['u_light_spec_position'] = -5., 5., -5.
         
 
     def on_initialize(self, event):
@@ -149,6 +161,8 @@ class MolecularViewerCanvas(app.Canvas):
                 self.timer.stop()
             else:
                 self.timer.start()
+        # if event.text == 'A':
+            # self.
 
 
     def on_timer(self, event):
