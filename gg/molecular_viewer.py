@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------------------------
-# 2014, Aurore Deschildre, Gael Goret, Nicolas P. Rougier.
+# 2014, Aurore Deschildre, Gael Goret, Cyrille Rossant, Nicolas P. Rougier.
 # Distributed under the terms of the new BSD License.
 # -----------------------------------------------------------------------------
 import numpy as np
@@ -94,7 +94,7 @@ class MolecularViewerCanvas(app.Canvas):
 
     def __init__(self, fname):
         app.Canvas.__init__(self, title = 'Molecular viewer')
-        self.size = 1200, 1000
+        self.size = 1200, 800
 
         self.program = gloo.Program(vertex, fragment)
         self.view = np.eye(4, dtype=np.float32)
