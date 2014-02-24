@@ -84,7 +84,9 @@ void main()
     vec3 O = v_eye_position.xyz;
     vec3 L = u_light_spec_position;
     vec3 K = normalize(normalize(L - M) + normalize(O - M));
-    float specular = clamp(pow(dot(normal, K), 50.), 0.0, 1.0);
+    // WARNING: abs() is necessary, otherwise weird bugs may appear with some
+    // GPU drivers...
+    float specular = clamp(pow(abs(dot(normal, K)), 40.), 0.0, 1.0);
     vec3 v_light = vec3(1., 1., 1.);
     gl_FragColor.rgb = .15*v_color +  .55*diffuse * v_color + .35*specular * v_light;
 }
